@@ -1,0 +1,4 @@
+*.o
+
+prints/*
+!prints/.keep
