@@ -1,4 +1,3 @@
 *.o
-
 prints/*
-!prints/.keep
+!RULES.txt
