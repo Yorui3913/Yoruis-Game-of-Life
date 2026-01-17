@@ -1,5 +1,5 @@
 # Yorui's Game of Life
-A simulator that allows you to create circuit-like structures, but instead of electricity it uses colors :D
+A Conway's Game of Life clone, but with more cells!
 
 
 # CONTROLS
