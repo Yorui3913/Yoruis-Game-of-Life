@@ -207,11 +207,25 @@ void updateUI()
     {
         selectionMode = !selectionMode;
         printMode = false;
+
+        Cell *selectionCell, *tmpSelection;
+        HASH_ITER(hh, selection, selectionCell, tmpSelection)
+        {
+            HASH_DEL(selection, selectionCell);
+            free(selectionCell);
+        }
     }
     if (IsKeyPressed(key_print))
     {
         selectionMode = 0;
         printMode = !printMode;
+
+        Cell *selectionCell, *tmpSelection;
+        HASH_ITER(hh, selection, selectionCell, tmpSelection)
+        {
+            HASH_DEL(selection, selectionCell);
+            free(selectionCell);
+        }
     }
 
     if (IsKeyPressed(key_cell_1))
@@ -259,11 +273,16 @@ void updateUI()
             HASH_ITER(hh, selection, selectionCell, tmpSelection)
             {
                 Cell *newCell = (Cell *)malloc(sizeof(Cell));
-                newCell->key = selectionCell->key + cellOffsetX + ((UINT64)cellOffsetY << 32);
+                newCell->key = (UINT32)((selectionCell->key + cellOffsetX) & 0xffffffff) + ((((selectionCell->key >> 32) & 0xffffffff) + cellOffsetY) << 32);
                 newCell->type = selectionCell->type;
                 HASH_ADD(hh, nonDeadCells, key, sizeof(UINT64), newCell);
 
-                addDeadNeighbors((selectionCell->key & 0xffffffff) + cellOffsetX, ((selectionCell->key >> 32) & 0xffffffff) + cellOffsetY, true);
+                Cell *deadCheck = (Cell *)malloc(sizeof(Cell));
+                HASH_FIND(hh, deadCells, &newCell->key, sizeof(UINT64), deadCheck);
+                if (deadCheck != NULL)
+                    HASH_DEL(deadCells, deadCheck);
+
+                addDeadNeighbors((UINT32)(selectionCell->key + cellOffsetX) & 0xffffffff, ((selectionCell->key >> 32) & 0xffffffff) + cellOffsetY, true);
             }
         }
 
