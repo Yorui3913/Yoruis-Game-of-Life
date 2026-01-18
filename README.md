@@ -49,17 +49,23 @@ There are currently 2 new Cell Types, Cells 0 and 1 work the same as regular GoL
 Of course there are cool patterns, here a some gifs of some of them
 
 ![Bee](https://github.com/user-attachments/assets/4174b56a-fd1a-4f39-9fc2-8b4ae63e205f)
+
 Bee
 
 ![Green Spaceship](https://github.com/user-attachments/assets/a2a6e1f7-bda4-46ba-9fb9-bcf74af86032)
+
 Green Spaceship (WIP Name)
 
 ![2B](https://github.com/user-attachments/assets/8f082e4f-d53a-4e01-a1b1-ed0e1285cc76)
+
 2B
 
 ![Loading](https://github.com/user-attachments/assets/f5812f2a-14a1-4e2d-b63d-65bccf223c29)
+
 Loading
 
+
 Of course there are way more, and it's YOUR job to find them out >:)
+
 My discord server in case you want to share your finds in it: 
 https://discord.gg/CKnYGdcZrN
