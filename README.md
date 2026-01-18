@@ -37,7 +37,7 @@ Paint/Erase
 Paste/Select and Copy
 
 ## Left/Right Mouse (Print Mode)
-Nothing (Yet)/Select and Print
+Select and Print/Select and Multi-Print by Advancing
 
 
 # Cells

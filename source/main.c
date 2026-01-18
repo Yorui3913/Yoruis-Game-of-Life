@@ -175,9 +175,88 @@ void addDeadNeighbors(UINT32 cellX, UINT32 cellY, bool addNOW)
     }
 }
 
+void doThePrinting(UINT8 printValue)
+{
+    selectionLeft = selectionStartX < selectionEndX ? selectionStartX : selectionEndX;
+    selectionTop = selectionStartY < selectionEndY ? selectionStartY : selectionEndY;
+    UINT32 endX = selectionStartX < selectionEndX ? selectionEndX : selectionStartX;
+    UINT32 endY = selectionStartY < selectionEndY ? selectionEndY : selectionStartY;
+
+    int imageWidth = (endX - selectionLeft + 1) * pixelSize;
+    int imageHeight = (endY - selectionTop + 1) * pixelSize;
+
+    Color *pixels = (Color *)malloc(imageWidth * imageHeight * sizeof(Color));
+    for (UINT64 y = selectionTop; y <= endY; y++)
+    {
+        for (UINT64 x = selectionLeft; x <= endX; x++)
+        {
+            int pixelID = ((x - selectionLeft) + (y - selectionTop) * imageWidth) * pixelSize;
+
+            UINT64 cellKey = x + (y << 32);
+            Cell *foundCell = (Cell *)malloc(sizeof(Cell));
+            HASH_FIND(hh, nonDeadCells, &cellKey, sizeof(UINT64), foundCell);
+            if (foundCell == NULL)
+            {
+                for (int pY = 0; pY < pixelSize; pY++)
+                {
+                    for (int pX = 0; pX < pixelSize; pX++)
+                    {
+                        if ((pX == 0 || pX == pixelSize - 1 || pY == 0 || pY == pixelSize - 1) && pixelSize >= 4)
+                            pixels[pixelID + pX + pY * imageWidth] = lineColor;
+                        else
+                            pixels[pixelID + pX + pY * imageWidth] = pixelColors[0];
+                    }
+                }
+                continue;
+            }
+
+            for (int pY = 0; pY < pixelSize; pY++)
+                for (int pX = 0; pX < pixelSize; pX++)
+                    pixels[pixelID + pX + pY * imageWidth] = pixelColors[foundCell->type & 15];
+        }
+    }
+
+    Image print;
+    print.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+    print.width = imageWidth;
+    print.height = imageHeight;
+    print.mipmaps = 1;
+    print.data = pixels;
+
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    char timeName[64];
+    strftime(timeName, sizeof(timeName), "%Y-%m-%d %H-%M-%S", &tm);
+
+    char dir[256];
+    sprintf(dir, "%sprints", GetApplicationDirectory());
+    if (!DirectoryExists(dir))
+        MakeDirectory(dir);
+
+    char imageName[512];
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    sprintf(imageName, "%sprints\\%s-%03ld.png", GetApplicationDirectory(), timeName, ts.tv_nsec / 1000000);
+
+    FILE *imageFile;
+    imageFile = fopen(imageName, "w");
+    fprintf(imageFile, ":D");
+    fclose(imageFile);
+
+    ExportImage(print, imageName);
+    printMode = printValue;
+    selectionMode = false;
+
+    Cell *selectionCell, *tmpSelection;
+    HASH_ITER(hh, selection, selectionCell, tmpSelection)
+    {
+        HASH_DEL(selection, selectionCell);
+        free(selectionCell);
+    }
+}
+
 void updateUI()
 {
-    printf("JUST CHECKING!\n");
     Vector2 mousePos = GetMousePosition();
     mousePosX = (UINT32)floorf(mousePos.x / pixelSize);
     mousePosY = (UINT32)floorf(mousePos.y / pixelSize);
@@ -262,11 +341,8 @@ void updateUI()
 
     if (selectionMode || printMode)
     {
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !printMode)
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         {
-            if (printMode)
-                printMode = 2;
-
             UINT32 cellOffsetX = mousePosX + xPos - selectionLeft - (INT64)abs((INT64)selectionLeft - (INT64)selectionEndX);
             UINT32 cellOffsetY = mousePosY + yPos - selectionTop - (INT64)abs((INT64)selectionTop - (INT64)selectionEndY);
 
@@ -287,7 +363,7 @@ void updateUI()
             }
         }
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && printMode))
         {
             selectionMode = 2;
 
@@ -302,13 +378,19 @@ void updateUI()
             }
         }
 
-        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && printMode))
         {
             selectionEndX = mousePosX + xPos;
             selectionEndY = mousePosY + yPos;
 
             selectionLeft = selectionStartX < selectionEndX ? selectionStartX : selectionEndX;
             selectionTop = selectionStartY < selectionEndY ? selectionStartY : selectionEndY;
+        }
+
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && printMode)
+        {
+            doThePrinting(1);
+            return;
         }
 
         if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
@@ -324,82 +406,7 @@ void updateUI()
 
             if (printMode)
             {
-                selectionLeft = selectionStartX < selectionEndX ? selectionStartX : selectionEndX;
-                selectionTop = selectionStartY < selectionEndY ? selectionStartY : selectionEndY;
-                UINT32 endX = selectionStartX < selectionEndX ? selectionEndX : selectionStartX;
-                UINT32 endY = selectionStartY < selectionEndY ? selectionEndY : selectionStartY;
-
-                int imageWidth = (endX - selectionLeft + 1) * pixelSize;
-                int imageHeight = (endY - selectionTop + 1) * pixelSize;
-
-                Color *pixels = (Color *)malloc(imageWidth * imageHeight * sizeof(Color));
-                for (UINT64 y = selectionTop; y <= endY; y++)
-                {
-                    for (UINT64 x = selectionLeft; x <= endX; x++)
-                    {
-                        int pixelID = ((x - selectionLeft) + (y - selectionTop) * imageWidth) * pixelSize;
-
-                        UINT64 cellKey = x + (y << 32);
-                        Cell *foundCell = (Cell *)malloc(sizeof(Cell));
-                        HASH_FIND(hh, nonDeadCells, &cellKey, sizeof(UINT64), foundCell);
-                        if (foundCell == NULL)
-                        {
-                            for (int pY = 0; pY < pixelSize; pY++)
-                            {
-                                for (int pX = 0; pX < pixelSize; pX++)
-                                {
-                                    if ((pX == 0 || pX == pixelSize - 1 || pY == 0 || pY == pixelSize - 1) && pixelSize >= 4)
-                                        pixels[pixelID + pX + pY * imageWidth] = lineColor;
-                                    else
-                                        pixels[pixelID + pX + pY * imageWidth] = pixelColors[0];
-                                }
-                            }
-                            continue;
-                        }
-
-                        for (int pY = 0; pY < pixelSize; pY++)
-                            for (int pX = 0; pX < pixelSize; pX++)
-                                pixels[pixelID + pX + pY * imageWidth] = pixelColors[foundCell->type & 15];
-                    }
-                }
-
-                Image print;
-                print.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
-                print.width = imageWidth;
-                print.height = imageHeight;
-                print.mipmaps = 1;
-                print.data = pixels;
-
-                time_t t = time(NULL);
-                struct tm tm = *localtime(&t);
-                char timeName[64];
-                strftime(timeName, sizeof(timeName), "%Y-%m-%d %H-%M-%S", &tm);
-
-                char dir[256];
-                sprintf(dir, "%sprints", GetApplicationDirectory());
-                if (!DirectoryExists(dir))
-                    MakeDirectory(dir);
-
-                char imageName[512];
-                struct timespec ts;
-                clock_gettime(CLOCK_REALTIME, &ts);
-                sprintf(imageName, "%sprints\\%s-%03ld.png", GetApplicationDirectory(), timeName, ts.tv_nsec / 1000000);
-
-                FILE *imageFile;
-                imageFile = fopen(imageName, "w");
-                fprintf(imageFile, ":D");
-                fclose(imageFile);
-
-                ExportImage(print, imageName);
-                printMode = 1;
-                selectionMode = false;
-
-                Cell *selectionCell, *tmpSelection;
-                HASH_ITER(hh, selection, selectionCell, tmpSelection)
-                {
-                    HASH_DEL(selection, selectionCell);
-                    free(selectionCell);
-                }
+                doThePrinting(2);
                 return;
             }
 
@@ -490,7 +497,6 @@ void updateGame()
         if (updateCounter > 0)
             return;
     }
-    advance = false;
 
     Cell *cell, *tmp;
     HASH_ITER(hh, nonDeadCells, cell, tmp)
@@ -582,6 +588,10 @@ void updateGame()
         }
     }
 
+    if (advance && printMode == 2)
+        doThePrinting(2);
+
+    advance = false;
     updateCounter = fpu;
 }
 
