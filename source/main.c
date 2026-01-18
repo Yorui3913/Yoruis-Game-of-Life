@@ -177,6 +177,7 @@ void addDeadNeighbors(UINT32 cellX, UINT32 cellY, bool addNOW)
 
 void updateUI()
 {
+    printf("JUST CHECKING!\n");
     Vector2 mousePos = GetMousePosition();
     mousePosX = (UINT32)floorf(mousePos.x / pixelSize);
     mousePosY = (UINT32)floorf(mousePos.y / pixelSize);
@@ -372,7 +373,7 @@ void updateUI()
                 time_t t = time(NULL);
                 struct tm tm = *localtime(&t);
                 char timeName[64];
-                strftime(timeName, sizeof(timeName), "%d-%m-%Y %H-%M-%S", &tm);
+                strftime(timeName, sizeof(timeName), "%Y-%m-%d %H-%M-%S", &tm);
 
                 char dir[256];
                 sprintf(dir, "%sprints", GetApplicationDirectory());
@@ -380,7 +381,9 @@ void updateUI()
                     MakeDirectory(dir);
 
                 char imageName[512];
-                sprintf(imageName, "%sprints\\%s.png", GetApplicationDirectory(), timeName);
+                struct timespec ts;
+                clock_gettime(CLOCK_REALTIME, &ts);
+                sprintf(imageName, "%sprints\\%s-%03ld.png", GetApplicationDirectory(), timeName, ts.tv_nsec / 1000000);
 
                 FILE *imageFile;
                 imageFile = fopen(imageName, "w");
@@ -388,7 +391,7 @@ void updateUI()
                 fclose(imageFile);
 
                 ExportImage(print, imageName);
-                printMode = false;
+                printMode = 1;
                 selectionMode = false;
 
                 Cell *selectionCell, *tmpSelection;

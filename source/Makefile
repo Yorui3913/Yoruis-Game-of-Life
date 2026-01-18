@@ -23,6 +23,9 @@
 
 .PHONY: all clean
 
+# My stuff :D
+EXTRA_DEBUG_FLAG   ?= -mwindows
+
 # Define required raylib variables
 PROJECT_NAME       ?= YGoL
 RAYLIB_VERSION     ?= 5.1-dev
@@ -372,13 +375,13 @@ all:
 
 # Project target defined by PROJECT_NAME
 $(PROJECT_NAME): $(OBJS)
-	$(CC) -o $(PROJECT_NAME)$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
+	$(CC) -o $(PROJECT_NAME)$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM) $(EXTRA_DEBUG_FLAG)
 
 # Compile source files
 # NOTE: This pattern will compile every module defined on $(OBJS)
 #%.o: %.c
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDE_PATHS) -D$(PLATFORM)
+	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDE_PATHS) -D$(PLATFORM) $(EXTRA_DEBUG_FLAG)
 
 # Clean everything
 clean:
